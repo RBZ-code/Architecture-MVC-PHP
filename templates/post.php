@@ -1,4 +1,8 @@
 <?php
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
 if (!isset($_SESSION['csrf_token'])) {
     $_SESSION['csrf_token'] = bin2hex(random_bytes(32)); // Génération du token CSRF si absent
 }
@@ -7,6 +11,13 @@ $title = htmlspecialchars($post->title);
 ?>
 
 <?php ob_start(); ?>
+<?php
+if (!empty($_SESSION['success_message'])) {
+    require('messageSuccess.php');
+    unset($_SESSION['success_message']); // Supprime le message après affichage
+}
+
+?>
 
 <p><a href="index.php">Retour à la liste des billets</a></p>
 
@@ -41,7 +52,7 @@ $title = htmlspecialchars($post->title);
         <button type="submit" class="btn btn-primary">Envoyer</button>
     </form>
     <?php foreach ($comments as $comment): ?>
-        <p><strong><?= htmlspecialchars($comment->author) ?></strong> le <?= htmlspecialchars($comment->frenchCreationDate) ?></p>
+        <p><strong><?= htmlspecialchars($comment->author) ?></strong> le <?= htmlspecialchars($comment->frenchCreationDate) ?> (<a href="index.php?action=update&id=<?= urldecode($comment->identifier) ?>&post_id=<?= urldecode($post->identifier) ?>">modifier</a>)</p>
         <p><?= nl2br(htmlspecialchars($comment->comment)) ?></p>
     <?php endforeach; ?>
 </div>
