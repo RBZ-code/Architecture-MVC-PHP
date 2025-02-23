@@ -1,60 +1,65 @@
 <?php
+namespace Application\Model\Comment;
 
-function getComments($id)
+use Application\Lib\Database\DatabaseConnection;
+
+require_once('src/lib/database.php');
+
+class Comment
 {
-
-
-
-    $database = dbConnects();
-
-    $statement = $database->prepare(
-        "SELECT id, post_id, author, comment, DATE_FORMAT(comment_date, '%d/%m/%Y à %Hh%imin%ss') AS date_creation_fr FROM comments  WHERE post_id = :post_id ORDER BY comment_date DESC"
-    );
-
-    $statement->execute([
-        'post_id' => $id,
-    ]);
-
-    $comments = [];
-
-    while ($row = $statement->fetch()) {
-        $comment = [
-            'author' => $row['author'],
-            'comment' => $row['comment'],
-            'french_creation_date' =>  $row['date_creation_fr'],
-        ];
-
-        $comments[] = $comment;
-    }
-
-    return $comments;
+    public string $author;
+    public string $frenchCreationDate;
+    public string $comment;
 }
 
-function createComment(string $post, string $author, string $comment)
+class CommentRepository
 {
-    $database = dbConnects();
+    public DatabaseConnection $connection;
 
-    $statement = $database->prepare(
-        "INSERT INTO comments(post_id, author, comment, comment_date)
+    public function getComments(string $id): array
+    {
+
+
+        $statement = $this->connection->getConnection()->prepare(
+            "SELECT id, post_id, author, comment, DATE_FORMAT(comment_date, '%d/%m/%Y à %Hh%imin%ss') AS date_creation_fr FROM comments  WHERE post_id = :post_id ORDER BY comment_date DESC"
+        );
+
+        $statement->execute([
+            'post_id' => $id,
+        ]);
+
+
+
+        $comments = [];
+
+        while ($row = $statement->fetch()) {
+            $comment = new Comment();
+            $comment->author = $row['author'];
+            $comment->comment = $row['comment'];
+            $comment->frenchCreationDate =  $row['date_creation_fr'];
+
+
+            $comments[] = $comment;
+        }
+
+        return $comments;
+    }
+
+    public function createComment(string $post, string $author, string $comment) : bool
+    {
+
+        $statement = $this->connection->getConnection()->prepare(
+            "INSERT INTO comments(post_id, author, comment, comment_date)
         VALUES(?,?,?, NOW())
         "
-    );
-    $success = $statement->execute([
-        $post,
-        $author,
-        $comment,
-    ]);
+        );
+        $success = $statement->execute([
+            $post,
+            $author,
+            $comment,
+        ]);
 
-    return($success > 0);
-}
-
-
-function dbConnects()
-{
-    try {
-        $database = new PDO('mysql:host=localhost;dbname=blog;charset=utf8', 'root', '');
-        return $database;
-    } catch (Exception $e) {
-        die('Erreur : ' . $e->getMessage());
+        return ($success > 0);
     }
+
 }
